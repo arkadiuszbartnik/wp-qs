@@ -1,0 +1,8 @@
+{
+    "name": "wordpress/dev-environment",
+    "description": "WordPress development environment with stubs",
+    "type": "project",
+    "require-dev": {
+        "php-stubs/wordpress-stubs": "^6.8"
+    }
+}

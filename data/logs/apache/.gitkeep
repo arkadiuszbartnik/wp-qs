@@ -1,0 +1,8 @@
+# Apache Logs
+
+This directory contains Apache server logs.
+
+Available log files:
+- `access.log` - Website access logs
+- `error.log` - Apache error logs
+- `other_vhosts_access.log` - Other virtual hosts logs

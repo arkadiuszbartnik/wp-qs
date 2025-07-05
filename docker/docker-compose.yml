@@ -1,0 +1,60 @@
+services:
+  wordpress:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress_password
+    volumes:
+      # Mount entire wp-content directory (plugins, themes, uploads)
+      - ../wp-content:/var/www/html/wp-content
+      # Mount Apache logs
+      - ../data/logs/apache:/var/log/apache2
+      # Mount PHP logs
+      - ../data/logs/php:/var/log/php
+      # Mount custom PHP configuration
+      - ../config/php/custom.ini:/usr/local/etc/php/conf.d/99-custom.ini:ro
+    restart: unless-stopped
+    networks:
+      - wordpress_network
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress_password
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - ../data/mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - wordpress_network
+    command: --default-authentication-plugin=mysql_native_password --log-error=/var/log/mysql/error.log --general-log=1 --general-log-file=/var/log/mysql/general.log --slow-query-log=1 --slow-query-log-file=/var/log/mysql/slow.log
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - db
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: wordpress
+      PMA_PASSWORD: wordpress_password
+    restart: unless-stopped
+    networks:
+      - wordpress_network
+
+networks:
+  wordpress_network:
+    driver: bridge

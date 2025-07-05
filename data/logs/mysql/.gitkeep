@@ -1,0 +1,8 @@
+# MySQL Logs
+
+This directory contains MySQL database logs.
+
+Available log files:
+- `error.log` - MySQL error logs
+- `general.log` - All SQL queries logs
+- `slow.log` - Slow queries logs
