@@ -95,3 +95,7 @@ wordpress-core-tmp/
 
 # Distribution packages
 dist/
+
+# Test logs
+logs/
+*.log

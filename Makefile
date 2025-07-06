@@ -49,6 +49,14 @@ test: ## Test environment
 	@echo "🧪 Testing environment..."
 	@./scripts/test-environment.sh
 
+test-all: ## Run all tests (comprehensive)
+	@echo "🚀 Running all tests..."
+	@./scripts/test-all.sh
+
+test-suite: ## Run comprehensive test suite
+	@echo "🧪 Running comprehensive test suite..."
+	@./scripts/test-suite.sh
+
 # Database management
 backup: ## Database backup
 	@echo "💾 Creating backup..."
@@ -57,6 +65,72 @@ backup: ## Database backup
 restore: ## Database restore (make restore file=backup.sql)
 	@echo "🔄 Restoring backup..."
 	@./scripts/manage.sh restore $(file)
+
+db-create: ## Create WordPress database
+	@echo "🗄️  Creating WordPress database..."
+	@./scripts/manage.sh wp 'db create'
+
+db-drop: ## Drop WordPress database (DANGEROUS)
+	@echo "⚠️  Dropping WordPress database..."
+	@echo "This will remove ALL database data. Press Ctrl+C to cancel, Enter to continue..."
+	@read
+	@./scripts/manage.sh wp 'db drop --yes'
+
+db-reset: ## Reset WordPress database (DANGEROUS)
+	@echo "⚠️  Resetting WordPress database..."
+	@echo "This will remove ALL WordPress data. Press Ctrl+C to cancel, Enter to continue..."
+	@read
+	@./scripts/manage.sh wp 'db reset --yes'
+
+db-check: ## Check database connection
+	@echo "🔍 Checking database connection..."
+	@./scripts/manage.sh wp 'db check' 2>/dev/null || { \
+		echo "Note: mysqlcheck not available in container, trying alternative..."; \
+		./scripts/manage.sh wp 'core is-installed' 2>/dev/null && echo "✅ Database connection OK (WordPress is installed)" || echo "❌ Database connection failed"; \
+	}
+
+db-info: ## Show database information
+	@echo "ℹ️  Database information:"
+	@./scripts/manage.sh wp 'db size --human-readable' 2>/dev/null || echo "❌ Cannot get database size"
+	@./scripts/manage.sh wp 'db tables' 2>/dev/null || echo "❌ Cannot list tables"
+
+db-status: ## Show detailed database status
+	@echo "📊 Database status:"
+	@./scripts/manage.sh wp 'db size --human-readable' 2>/dev/null && echo "✅ Database size retrieved" || echo "❌ Cannot get database size"
+	@echo "📋 Database tables:"
+	@./scripts/manage.sh wp 'db tables' 2>/dev/null || echo "❌ Cannot list tables"
+	@echo "📊 WordPress tables status:"
+	@./scripts/manage.sh wp 'core is-installed' 2>/dev/null && echo "✅ WordPress is installed" || echo "❌ WordPress is not installed"
+
+db-test: ## Test database with simple queries
+	@echo "🧪 Testing database with simple queries..."
+	@./scripts/manage.sh wp 'db size' 2>/dev/null && echo "✅ Database size query OK" || echo "❌ Database size query failed"
+	@./scripts/manage.sh wp 'db tables' 2>/dev/null && echo "✅ Database tables query OK" || echo "❌ Database tables query failed"
+	@./scripts/manage.sh wp 'core is-installed' 2>/dev/null && echo "✅ WordPress database is installed" || echo "❌ WordPress database is not installed"
+
+db-optimize: ## Optimize database
+	@echo "🔧 Optimizing database..."
+	@./scripts/manage.sh wp 'db optimize'
+
+db-help: ## Show all database commands
+	@echo "🗄️  Available database commands:"
+	@echo "  make db-check     - Check database connection"
+	@echo "  make db-create    - Create WordPress database"
+	@echo "  make db-drop      - Drop WordPress database (DANGEROUS)"
+	@echo "  make db-reset     - Reset WordPress database (DANGEROUS)"
+	@echo "  make db-info      - Show database information"
+	@echo "  make db-status    - Show detailed database status"
+	@echo "  make db-test      - Test database with simple queries"
+	@echo "  make db-optimize  - Optimize database"
+	@echo "  make backup       - Create database backup"
+	@echo "  make restore      - Restore database from backup"
+	@echo ""
+	@echo "🌐 WordPress installation commands:"
+	@echo "  make wp-install-quick - Quick install with defaults"
+	@echo "  make wp-install       - Custom install (specify parameters)"
+	@echo "  make wp-status        - Check WordPress status"
+	@echo "  make wp-info          - Show WordPress info"
+	@echo "  make wp-reset         - Reset WordPress (DANGEROUS)"
 
 # Plugin management
 plugin-create: ## Create new plugin (make plugin-create name=my-plugin)
@@ -114,6 +188,32 @@ wp: ## Run WP-CLI command (make wp cmd="core version")
 	@echo "🔧 Running WP-CLI: $(cmd)"
 	@./scripts/manage.sh wp '$(cmd)'
 
+wp-install: ## Install WordPress database (make wp-install url=localhost:8080 title=My-Site admin=admin pass=admin123 email=admin@example.com)
+	@echo "🚀 Installing WordPress database..."
+	@./scripts/manage.sh wp 'core install --url=$(or $(url),http://localhost:8080) --title=$(or $(title),WordPress-Dev-Site) --admin_user=$(or $(admin),admin) --admin_password=$(or $(pass),admin123) --admin_email=$(or $(email),admin@example.com) --skip-email'
+
+wp-install-quick: ## Quick WordPress install with default settings
+	@echo "🚀 Quick WordPress installation..."
+	@./scripts/manage.sh wp 'core install --url=http://localhost:8080 --title=WordPress-Dev-Site --admin_user=admin --admin_password=admin123 --admin_email=admin@example.com --skip-email'
+
+wp-reset: ## Reset WordPress database (DANGEROUS - removes all data)
+	@echo "⚠️  Resetting WordPress database..."
+	@echo "This will remove ALL WordPress data. Press Ctrl+C to cancel, Enter to continue..."
+	@read
+	@./scripts/manage.sh wp 'db reset --yes'
+
+wp-status: ## Check WordPress installation status
+	@echo "📊 WordPress status..."
+	@./scripts/manage.sh wp 'core is-installed' && echo "✅ WordPress is installed" || echo "❌ WordPress is not installed"
+	@./scripts/manage.sh wp 'core version' 2>/dev/null || echo "❌ WordPress core not accessible"
+
+wp-info: ## Show WordPress installation info
+	@echo "ℹ️  WordPress information:"
+	@./scripts/manage.sh wp 'core version' 2>/dev/null || echo "❌ WordPress not accessible"
+	@./scripts/manage.sh wp 'option get siteurl' 2>/dev/null || echo "❌ Site URL not set"
+	@./scripts/manage.sh wp 'option get admin_email' 2>/dev/null || echo "❌ Admin email not set"
+	@./scripts/manage.sh wp 'user list --role=administrator --format=table' 2>/dev/null || echo "❌ No admin users found"
+
 wp-install-plugin: ## Install plugin via WP-CLI (make wp-install-plugin name=akismet)
 	@echo "📦 Installing plugin: $(name)"
 	@./scripts/manage.sh wp 'plugin install $(name) --activate'
@@ -128,12 +228,23 @@ dev-start: setup start ## Full development environment start
 	@echo "🌐 WordPress: http://localhost:8080"
 	@echo "🗄️  phpMyAdmin: http://localhost:8081"
 
+dev-install: dev-start wp-install-quick ## Full development start with WordPress installation
+	@echo "🚀 Development environment with WordPress installed!"
+	@echo "🌐 WordPress: http://localhost:8080"
+	@echo "🗄️  phpMyAdmin: http://localhost:8081"
+	@echo "👤 Admin user: admin / admin123"
+
 dev-logs: ## Show logs in follow mode
 	@echo "📋 Logs in follow mode..."
 	@./scripts/manage.sh logs -f
 
 dev-reset: clean setup start ## Reset entire environment
 	@echo "🔄 Environment reset!"
+
+dev-reset-full: clean setup start wp-install-quick ## Reset environment with fresh WordPress installation
+	@echo "🔄 Environment reset with fresh WordPress installation!"
+	@echo "🌐 WordPress: http://localhost:8080"
+	@echo "👤 Admin user: admin / admin123"
 
 # Info commands
 info: ## Show environment information
